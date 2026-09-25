@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>メダル一覧・検索 - バウンティラッシュ攻略</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    /* メダルページ専用スタイル */
+    .filter-box {
+      background: white;
+      border-radius: 12px;
+      padding: 18px 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+    .filter-box h3 {
+      font-size: 1rem;
+      margin-bottom: 12px;
+      font-weight: 700;
+    }
+    .search-input {
+      width: 100%;
+      padding: 10px 14px;
+      border: 1.5px solid #e5e7eb;
+      border-radius: 8px;
+      font-size: 1rem;
+      margin-bottom: 14px;
+    }
+    .search-input:focus {
+      outline: none;
+      border-color: #3b82f6;
+    }
+    .tag-filters {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .tag-btn {
+      padding: 5px 12px;
+      border-radius: 999px;
+      border: 1.5px solid #d1d5db;
+      background: #f9fafb;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .tag-btn:hover {
+      border-color: #3b82f6;
+      color: #2563eb;
+    }
+    .tag-btn.active {
+      background: #2563eb;
+      border-color: #2563eb;
+      color: white;
+    }
+    .effect-filters {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 10px;
+    }
+    .result-count {
+      font-size: 0.9rem;
+      color: #6b7280;
+      margin-bottom: 12px;
+    }
+    .medal-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .medal-card {
+      background: white;
+      border-radius: 12px;
+      padding: 16px 18px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 8px;
+    }
+    .medal-card.hidden {
+      display: none;
+    }
+    .medal-name {
+      font-size: 1.15rem;
+      font-weight: 800;
+      color: #111827;
+    }
+    .medal-meta {
+      font-size: 0.9rem;
+      color: #4b5563;
+      line-height: 1.55;
+    }
+    .medal-meta strong {
+      color: #374151;
+    }
+    .medal-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 4px;
+    }
+    .medal-tag {
+      background: #eff6ff;
+      color: #1d4ed8;
+      font-size: 0.78rem;
+      font-weight: 600;
+      padding: 3px 9px;
+      border-radius: 999px;
+    }
+    .reset-btn {
+      margin-top: 12px;
+      padding: 6px 14px;
+      background: #f3f4f6;
+      border: 1px solid #d1d5db;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      cursor: pointer;
+    }
+    .reset-btn:hover {
+      background: #e5e7eb;
+    }
+    @media (min-width: 640px) {
+      .medal-card {
+        grid-template-columns: 160px 1fr;
+        gap: 16px;
+        align-items: start;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <header class="site-header">
+    <div class="header-inner">
+      <h1><a href="index.html">バウンティラッシュ 攻略</a></h1>
+      <p>メダル一覧・検索ツール</p>
+    </div>
+    <nav class="nav">
+      <a href="index.html">ホーム</a>
+      <a href="ranking.html">最強ランキング</a>
+      <a href="medals.html" class="active">メダル一覧</a>
+      <a href="reroll.html">リセマラ</a>
+      <a href="beginner.html">初心者ガイド</a>
+    </nav>
+  </header>
+
+  <main class="container">
+    <h2 class="page-title">メダル一覧・検索</h2>
+    <p class="page-desc">
+      タグや効果で絞り込みができます。サンプルデータを掲載しています。
+    </p>
+
+    <!-- フィルター -->
+    <div class="filter-box">
+      <h3>絞り込み</h3>
+      <input type="text" id="searchInput" class="search-input" placeholder="メダル名や効果で検索...">
+
+      <div style="margin-bottom: 8px; font-size: 0.9rem; font-weight: 600;">タグで絞る</div>
+      <div class="tag-filters" id="tagFilters">
+        <!-- JSで生成 -->
+      </div>
+
+      <div style="margin-top: 14px; margin-bottom: 8px; font-size: 0.9rem; font-weight: 600;">効果で絞る</div>
+      <div class="effect-filters" id="effectFilters">
+        <!-- JSで生成 -->
+      </div>
+
+      <button class="reset-btn" id="resetBtn">フィルターをリセット</button>
+    </div>
+
+    <div class="result-count" id="resultCount">表示中: -</div>
+
+    <!-- メダル一覧 -->
+    <div class="medal-list" id="medalList">
+      <!-- JSで生成 -->
+    </div>
+  </main>
+
+  <footer class="footer">
+    © バウンティラッシュ攻略サイト（サンプル）
+  </footer>
+
+  <script>
+    // ===== サンプルメダルデータ =====
+    const medals = [
+      {name:"ルフィメダル",drop:"ルフィ（船長）",trait:"敵をK.O.したとき、クリティカルが20秒間40%増加する（重複不可）",stats:"体力、防御力、クリティカル",tags:["東の海", "麦わらの一味", "超人系能力者", "船長", "義兄弟"]},
+      {name:"ゾロメダル",drop:"ゾロ（麦わらの一味）",trait:"体力が30%以下のとき、クリティカルが20秒間40%増加する（重複不可）",stats:"攻撃力、防御力、クリティカル",tags:["東の海", "麦わらの一味", "剣士"]},
+      {name:"ウソップメダル",drop:"ウソップ（麦わらの一味）",trait:"残り時間が60秒以下のとき、奪取速度が6%増加する",stats:"体力、攻撃力、燃焼状態短縮",tags:["東の海", "麦わらの一味", "狙撃手"]},
+      {name:"サンジメダル",drop:"サンジ（麦わらの一味）",trait:"敵をK.O.したとき、スキル1のクールタイムを4%短縮する",stats:"体力、防御力、クリティカル",tags:["東の海", "麦わらの一味", "料理人"]},
+      {name:"ナミメダル",drop:"ナミ（麦わらの一味）",trait:"自分がお宝を奪取したとき、スキル1のクールタイムを4%短縮する",stats:"体力、攻撃力、防御力",tags:["東の海", "麦わらの一味", "航海士"]},
+      {name:"チョッパーメダル",drop:"チョッパー（麦わらの一味）",trait:"自チームのお宝確保数が敵チームより少ないとき、スキル1のクールタイム短縮速度が7%増加する",stats:"体力、攻撃力、防御力",tags:["グランドライン突入", "麦わらの一味", "動物系能力者", "船医"]},
+      {name:"ロビンメダル",drop:"ロビン（麦わらの一味）",trait:"敵をK.O.したとき、移動速度が20秒間2%増加する（重複不可）",stats:"体力、防御力、クリティカル",tags:["アラバスタ", "麦わらの一味", "考古学者", "革命軍"]},
+      {name:"フランキーメダル",drop:"フランキー",trait:"自分がお宝を奪取したとき、体力が5%回復する",stats:"体力、攻撃力、防御力",tags:["ウォーターセブン", "麦わらの一味", "船大工"]},
+      {name:"ブルックメダル",drop:"ブルック",trait:"体力が50%以下のとき、スキル2のクールタイム短縮速度が10%増加する",stats:"攻撃力、防御力、クリティカル",tags:["スリラーバーク", "麦わらの一味", "音楽家"]},
+      {name:"ジンベエメダル",drop:"ジンベエ",trait:"自チームのお宝確保数が敵チームより少ないとき、与えるダメージが5%増加する",stats:"体力、防御力、クリティカル",tags:["魚人島", "麦わらの一味", "魚人", "王下七武海"]},
+      {name:"シャンクスメダル",drop:"シャンクス（大頭）",trait:"体力が70%以上のとき、回避のクールタイム短縮速度が13%増加する",stats:"攻撃力、防御力、クリティカル",tags:["東の海", "赤髪海賊団", "四皇", "覇王色"]},
+      {name:"鷹の目メダル",drop:"ミホーク",trait:"敵をK.O.したとき、スキル1のクールタイムを8%短縮する",stats:"体力、防御力、クリティカル",tags:["東の海", "王下七武海", "剣士"]},
+      {name:"バギーメダル",drop:"バギー",trait:"自分がいるお宝エリアに味方がいるとき、スキル1のクールタイム短縮速度が10%増加する",stats:"体力、攻撃力、防御力",tags:["東の海", "バギー海賊団", "超人系能力者", "船長"]},
+      {name:"クロメダル",drop:"キャプテン・クロ",trait:"自チームのお宝確保数が敵チームより多いとき、スキル1のクールタイム短縮速度が10%増加する",stats:"体力、防御力、クリティカル",tags:["東の海", "黒猫海賊団", "船長"]},
+      {name:"クリークメダル",drop:"ドン・クリーク",trait:"自チームの味方がK.O.されたとき、スキル1のクールタイムを3%短縮する",stats:"攻撃力、クリティカル、毒状態短縮",tags:["東の海", "海賊艦隊", "船長"]},
+      {name:"アーロンメダル",drop:"アーロン",trait:"敵をK.O.したとき、クリティカルが20秒間120%増加する（重複不可）",stats:"体力、防御力、クリティカル",tags:["東の海", "魚人", "船長"]},
+      {name:"ワポルメダル",drop:"ワポル",trait:"自チームのお宝確保数が敵チームより多いとき、奪取速度が12%増加する",stats:"攻撃力、防御力、クリティカル",tags:["ドラム王国", "超人系能力者", "王"]},
+      {name:"たしぎメダル",drop:"たしぎ",trait:"自分がお宝を奪取したとき、移動速度が20秒間4%増加する（重複不可）",stats:"体力、攻撃力、防御力",tags:["海軍", "剣士"]},
+      {name:"スモーカーメダル",drop:"スモーカー",trait:"敵チームのお宝エリアにいるとき、与えるダメージが5%増加する",stats:"攻撃力、クリティカル、気絶状態短縮",tags:["海軍", "自然系能力者"]},
+      {name:"クロコダイルメダル",drop:"クロコダイル",trait:"体力が70%以上のとき、スキル1のクールタイム短縮速度が13%増加する",stats:"攻撃力、防御力、クリティカル",tags:["アラバスタ", "王下七武海", "自然系能力者", "船長"]},
+      {name:"エネルメダル",drop:"エネル",trait:"敵に感電状態を付与したとき、スキル1のクールタイムを6%短縮する",stats:"体力、防御力、クリティカル",tags:["空島", "自然系能力者", "神"]},
+      {name:"ルッチメダル",drop:"ロブ・ルッチ",trait:"クリティカルが発生したとき、スキル2のクールタイムを3%短縮する",stats:"攻撃力、防御力、クリティカル",tags:["エニエスロビー", "サイファーポール", "動物系能力者", "六式"]},
+      {name:"カクメダル",drop:"カク",trait:"敵チームのお宝エリアにいる敵に攻撃したとき、与えるダメージが5%増加する",stats:"体力、攻撃力、防御力",tags:["エニエスロビー", "サイファーポール", "動物系能力者", "六式"]},
+      {name:"ジャブラメダル",drop:"ジャブラ",trait:"クリティカルが発生したとき、体力が3%回復する",stats:"攻撃力、防御力、クリティカル",tags:["エニエスロビー", "サイファーポール", "動物系能力者", "六式"]},
+      {name:"青キジメダル",drop:"青キジ",trait:"自チームのお宝エリアにいるとき、受けるダメージが5%減少する",stats:"体力、防御力、クリティカル",tags:["海軍", "自然系能力者", "大将"]},
+      {name:"赤犬メダル",drop:"赤犬",trait:"敵をK.O.したとき、スキル1のクールタイムを8%短縮する",stats:"攻撃力、防御力、クリティカル",tags:["海軍", "自然系能力者", "大将"]},
+      {name:"黄猿メダル",drop:"黄猿",trait:"残り時間が60秒以下のとき、移動速度が20秒間4%増加する（重複不可）",stats:"攻撃力、防御力、クリティカル",tags:["海軍", "自然系能力者", "大将"]},
+      {name:"センゴクメダル",drop:"センゴク",trait:"自チームの味方がK.O.されたとき、スキル2のクールタイムを4%短縮する",stats:"体力、攻撃力、防御力",tags:["海軍", "動物系能力者", "元元帥"]},
+      {name:"ガープメダル",drop:"ガープ",trait:"敵をK.O.したとき、与えるダメージが5%増加する",stats:"攻撃力、防御力、クリティカル",tags:["海軍", "中将", "覇王色"]},
+      {name:"白ひげメダル",drop:"白ひげ",trait:"自チームのお宝確保数が敵チームより少ないとき、与えるダメージが5%増加する",stats:"攻撃力、クリティカル、振動状態短縮",tags:["新世界", "白ひげ海賊団", "四皇", "自然系能力者"]},
+      {name:"エースメダル",drop:"エース",trait:"残り時間が60秒以下のとき、クリティカルが20秒間90%増加する（重複不可）",stats:"攻撃力、防御力、クリティカル",tags:["アラバスタ", "白ひげ海賊団", "自然系能力者", "義兄弟"]},
+      {name:"マルコメダル",drop:"マルコ",trait:"体力が70%以上のとき、受けるダメージが5%減少する",stats:"体力、防御力、クリティカル",tags:["新世界", "白ひげ海賊団", "動物系能力者"]},
+      {name:"ジョズメダル",drop:"ジョズ",trait:"体力が70%以上のとき、受けるダメージが5%減少する",stats:"体力、防御力、クリティカル",tags:["新世界", "白ひげ海賊団", "超人系能力者"]},
+      {name:"ビスタメダル",drop:"ビスタ",trait:"敵をK.O.したとき、スキル2のクールタイムを6%短縮する",stats:"攻撃力、防御力、クリティカル",tags:["新世界", "白ひげ海賊団", "剣士"]},
+      {name:"黒ひげメダル",drop:"黒ひげ",trait:"敵チームのお宝エリアにいるとき、与えるダメージが5%増加する",stats:"攻撃力、防御力、クリティカル",tags:["新世界", "黒ひげ海賊団", "四皇", "自然系能力者", "闇"]},
+      {name:"シラスメダル",drop:"シラス",trait:"自分がお宝を奪取したとき、スキル1のクールタイムを6%短縮する",stats:"体力、攻撃力、防御力",tags:["新世界", "黒ひげ海賊団"]},
+      {name:"バーソロミュー・くまメダル",drop:"くま",trait:"自チームのお宝エリアにいるとき、受けるダメージが5%減少する",stats:"体力、防御力、クリティカル",tags:["シャボンディ諸島", "王下七武海", "超人系能力者", "革命軍"]},
+      {name:"ハンコックメダル",drop:"ハンコック",trait:"自チームのお宝確保数が敵チームより多いとき、スキル1のクールタイム短縮速度が13%増加する",stats:"攻撃力、防御力、クリティカル",tags:["シャボンディ諸島", "王下七武海", "超人系能力者", "海賊女帝"]},
+      {name:"ドフラミンゴメダル",drop:"ドフラミンゴ",trait:"敵をK.O.したとき、スキル2のクールタイムを8%短縮する",stats:"攻撃力、防御力、クリティカル",tags:["ドレスローザ", "王下七武海", "超人系能力者", "船長"]},
+      {name:"ローメダル",drop:"トラファルガー・ロー",trait:"自チームのお宝エリアにいるとき、スキル1のクールタイム短縮速度が13%増加する",stats:"体力、攻撃力、防御力",tags:["パンクハザード", "ハートの海賊団", "超人系能力者", "最悪の世代", "船長"]},
+      {name:"キッドメダル",drop:"ユースタス・キッド",trait:"体力が70%以上のとき、受けるダメージが5%減少する",stats:"攻撃力、防御力、クリティカル",tags:["新世界", "キッド海賊団", "超人系能力者", "最悪の世代", "船長"]},
+      {name:"キラーメダル",drop:"キラー",trait:"敵をK.O.したとき、スキル1のクールタイムを6%短縮する",stats:"攻撃力、防御力、クリティカル",tags:["新世界", "キッド海賊団", "最悪の世代"]},
+      {name:"アプーメダル",drop:"アプー",trait:"残り時間が60秒以下のとき、スキル2のクールタイム短縮速度が13%増加する",stats:"体力、攻撃力、防御力",tags:["新世界", "最悪の世代", "超人系能力者"]},
+      {name:"X・ドレークメダル",drop:"X・ドレーク",trait:"自チームのお宝確保数が敵チームより少ないとき、与えるダメージが5%増加する",stats:"体力、防御力、クリティカル",tags:["新世界", "最悪の世代", "動物系能力者", "海軍"]},
+      {name:"ホーキンスメダル",drop:"ホーキンス",trait:"体力が50%以下のとき、受けるダメージが5%減少する",stats:"体力、防御力、クリティカル",tags:["新世界", "最悪の世代", "超人系能力者"]},
+      {name:"うるティメダル",drop:"うるティ",trait:"自分がお宝を奪取したとき、移動速度が20秒間3%増加する（重複不可）",stats:"体力、攻撃力、防御力",tags:["ワノ国", "百獣海賊団", "動物系能力者"]},
+      {name:"ページワンメダル",drop:"ページワン",trait:"敵チームのお宝エリアにいるとき、スキル2のクールタイム短縮速度が10%増加する",stats:"攻撃力、防御力、クリティカル",tags:["ワノ国", "百獣海賊団", "動物系能力者"]},
+      {name:"ササキメダル",drop:"ササキ",trait:"体力が70%以上のとき、与えるダメージが5%増加する",stats:"攻撃力、防御力、クリティカル",tags:["ワノ国", "百獣海賊団", "動物系能力者"]},
+      {name:"ブラックマリアメダル",drop:"ブラックマリア",trait:"自チームのお宝エリアにいるとき、受けるダメージが5%減少する",stats:"体力、防御力、クリティカル",tags:["ワノ国", "百獣海賊団", "動物系能力者"]},
+      {name:"フーーズーメダル",drop:"フーズ・フー",trait:"敵をK.O.したとき、スキル1のクールタイムを5%短縮する",stats:"攻撃力、防御力、クリティカル",tags:["ワノ国", "百獣海賊団", "動物系能力者"]},
+      {name:"キングメダル",drop:"キング",trait:"体力が70%以上のとき、与えるダメージが5%増加する",stats:"攻撃力、防御力、クリティカル",tags:["ワノ国", "百獣海賊団", "動物系能力者", "三災"]},
+      {name:"クイーンメダル",drop:"クイーン",trait:"自チームの味方がK.O.されたとき、スキル2のクールタイムを5%短縮する",stats:"体力、攻撃力、防御力",tags:["ワノ国", "百獣海賊団", "動物系能力者", "三災"]},
+      {name:"ジャックメダル",drop:"ジャック",trait:"敵チームのお宝エリアにいるとき、与えるダメージが5%増加する",stats:"攻撃力、防御力、クリティカル",tags:["ワノ国", "百獣海賊団", "動物系能力者", "三災"]},
+      {name:"カイドウメダル",drop:"カイドウ",trait:"敵をK.O.したとき、スキル1のクールタイムを8%短縮する",stats:"攻撃力、防御力、クリティカル",tags:["ワノ国", "百獣海賊団", "四皇", "動物系能力者", "覇王色"]},
+      {name:"ビッグマムメダル",drop:"ビッグマム",trait:"自チームのお宝確保数が敵チームより多いとき、スキル1のクールタイム短縮速度が13%増加する",stats:"体力、攻撃力、防御力",tags:["ホールケーキアイランド", "ビッグマム海賊団", "四皇", "超人系能力者"]},
+      {name:"カタクリメダル",drop:"カタクリ",trait:"体力が70%以上のとき、回避のクールタイム短縮速度が13%増加する",stats:"攻撃力、防御力、クリティカル",tags:["ホールケーキアイランド", "ビッグマム海賊団", "超人系能力者", "スイート3将星"]},
+      {name:"スムージーメダル",drop:"スムージー",trait:"自分がお宝を奪取したとき、スキル2のクールタイムを6%短縮する",stats:"体力、攻撃力、防御力",tags:["ホールケーキアイランド", "ビッグマム海賊団", "超人系能力者", "スイート3将星"]},
+      {name:"クラッカーメダル",drop:"クラッカー",trait:"自チームのお宝エリアにいるとき、受けるダメージが5%減少する",stats:"体力、防御力、クリティカル",tags:["ホールケーキアイランド", "ビッグマム海賊団", "超人系能力者", "スイート3将星"]},
+      {name:"ペロスペローメダル",drop:"ペロスペロー",trait:"敵をK.O.したとき、移動速度が20秒間3%増加する（重複不可）",stats:"攻撃力、防御力、クリティカル",tags:["ホールケーキアイランド", "ビッグマム海賊団", "超人系能力者"]},
+      {name:"オーブンメダル",drop:"オーブン",trait:"残り時間が60秒以下のとき、与えるダメージが5%増加する",stats:"攻撃力、防御力、クリティカル",tags:["ホールケーキアイランド", "ビッグマム海賊団"]},
+      {name:"ダイフクメダル",drop:"ダイフク",trait:"自分がいるお宝エリアに味方がいるとき、奪取速度が8%増加する",stats:"体力、攻撃力、防御力",tags:["ホールケーキアイランド", "ビッグマム海賊団"]},
+      {name:"サボメダル",drop:"サボ",trait:"敵をK.O.したとき、スキル1のクールタイムを8%短縮する",stats:"攻撃力、防御力、クリティカル",tags:["ドレスローザ", "革命軍", "自然系能力者", "義兄弟"]},
+      {name:"コアラメダル",drop:"コアラ",trait:"自チームのお宝エリアにいるとき、スキル2のクールタイム短縮速度が10%増加する",stats:"体力、攻撃力、防御力",tags:["革命軍"]},
+      {name:"ハックメダル",drop:"ハック",trait:"体力が50%以下のとき、与えるダメージが5%増加する",stats:"攻撃力、防御力、クリティカル",tags:["革命軍", "魚人"]},
+      {name:"イワメダル",drop:"エンポリオ・イワンコフ",trait:"再出撃したとき、体力が10%回復する",stats:"体力、防御力、クリティカル",tags:["革命軍", "超人系能力者"]},
+      {name:"バーソロミュー・くま（革命軍）メダル",drop:"くま（革命軍）",trait:"自チームのお宝確保数が敵チームより少ないとき、受けるダメージが5%減少する",stats:"体力、防御力、クリティカル",tags:["革命軍", "超人系能力者"]},
+      {name:"レイリーメダル",drop:"レイリー",trait:"体力が70%以上のとき、スキル1のクールタイム短縮速度が13%増加する",stats:"攻撃力、防御力、クリティカル",tags:["シャボンディ諸島", "ロジャー海賊団", "覇王色"]},
+      {name:"ロジャーメダル",drop:"ゴール・D・ロジャー",trait:"敵をK.O.したとき、与えるダメージが5%増加する",stats:"攻撃力、防御力、クリティカル",tags:["ロジャー海賊団", "海賊王", "覇王色"]},
+      {name:"おでんメダル",drop:"光月おでん",trait:"敵チームのお宝エリアにいるとき、与えるダメージが5%増加する",stats:"攻撃力、防御力、クリティカル",tags:["ワノ国", "光月家", "剣士", "覇王色"]},
+      {name:"ヤマトメダル",drop:"ヤマト",trait:"体力が70%以上のとき、回避のクールタイム短縮速度が13%増加する",stats:"攻撃力、防御力、クリティカル",tags:["ワノ国", "百獣海賊団", "動物系能力者", "覇王色"]},
+      {name:"錦えもんメダル",drop:"錦えもん",trait:"自分がお宝を奪取したとき、スキル1のクールタイムを6%短縮する",stats:"体力、攻撃力、防御力",tags:["ワノ国", "光月家", "剣士"]},
+      {name:"カン十郎メダル",drop:"カン十郎",trait:"自チームのお宝エリアにいるとき、スキル2のクールタイム短縮速度が10%増加する",stats:"体力、防御力、クリティカル",tags:["ワノ国", "光月家", "超人系能力者"]},
+      {name:"雷ぞうメダル",drop:"雷ぞう",trait:"残り時間が60秒以下のとき、奪取速度が8%増加する",stats:"攻撃力、防御力、クリティカル",tags:["ワノ国", "光月家", "忍者"]},
+      {name:"河松メダル",drop:"河松",trait:"敵をK.O.したとき、スキル2のクールタイムを5%短縮する",stats:"体力、攻撃力、防御力",tags:["ワノ国", "光月家"]},
+      {name:"イヌアラシメダル",drop:"イヌアラシ",trait:"自チームのお宝確保数が敵チームより少ないとき、与えるダメージが5%増加する",stats:"攻撃力、防御力、クリティカル",tags:["ゾウ", "ミンク族", "獣の王国"]},
+      {name:"ネコマムシメダル",drop:"ネコマムシ",trait:"体力が70%以上のとき、受けるダメージが5%減少する",stats:"体力、防御力、クリティカル",tags:["ゾウ", "ミンク族", "獣の王国"]},
+      {name:"キャロットメダル",drop:"キャロット",trait:"敵に感電状態を付与したとき、スキル1のクールタイムを6%短縮する",stats:"体力、防御力、クリティカル",tags:["ゾウ", "ミンク族", "スーロン"]},
+      {name:"ペドロメダル",drop:"ペドロ",trait:"自分がお宝を奪取したとき、移動速度が20秒間3%増加する（重複不可）",stats:"攻撃力、防御力、クリティカル",tags:["ゾウ", "ミンク族"]},
+      {name:"ワンダメダル",drop:"ワンダ",trait:"自チームのお宝エリアにいるとき、スキル1のクールタイム短縮速度が10%増加する",stats:"体力、攻撃力、防御力",tags:["ゾウ", "ミンク族"]},
+      {name:"しらほしメダル",drop:"しらほし",trait:"自チームの味方がK.O.されたとき、体力が3%回復する",stats:"体力、防御力、クリティカル",tags:["魚人島", "魚人", "王女"]},
+      {name:"ネプチューンメダル",drop:"ネプチューン",trait:"自チームのお宝確保数が敵チームより多いとき、奪取速度が10%増加する",stats:"体力、攻撃力、防御力",tags:["魚人島", "魚人", "王"]},
+      {name:"ホーディ・ジョーンズメダル",drop:"ホーディ・ジョーンズ",trait:"体力が30%以下のとき、与えるダメージが5%増加する",stats:"攻撃力、防御力、クリティカル",tags:["魚人島", "魚人", "新魚人海賊団"]},
+      {name:"アラディンメダル",drop:"アラディン",trait:"自分がいるお宝エリアに味方がいるとき、受けるダメージが5%減少する",stats:"体力、防御力、クリティカル",tags:["魚人島", "魚人", "太陽海賊団"]},
+      {name:"マッハバイスメダル",drop:"マッハバイス",trait:"敵チームのお宝エリアにいるとき、スキル2のクールタイム短縮速度が10%増加する",stats:"攻撃力、防御力、クリティカル",tags:["ドンキホーテ海賊団", "超人系能力者"]},
+      {name:"セニョール・ピンクメダル",drop:"セニョール・ピンク",trait:"体力が50%以下のとき、受けるダメージが5%減少する",stats:"体力、防御力、クリティカル",tags:["ドンキホーテ海賊団", "超人系能力者"]},
+      {name:"ディアマンテメダル",drop:"ディアマンテ",trait:"敵をK.O.したとき、スキル1のクールタイムを6%短縮する",stats:"攻撃力、防御力、クリティカル",tags:["ドンキホーテ海賊団", "超人系能力者", "四上層幹部"]},
+      {name:"トレーボルメダル",drop:"トレーボル",trait:"自チームのお宝エリアにいるとき、受けるダメージが5%減少する",stats:"体力、防御力、クリティカル",tags:["ドンキホーテ海賊団", "超人系能力者", "四上層幹部"]},
+      {name:"ピカメダル",drop:"ピカ",trait:"体力が70%以上のとき、与えるダメージが5%増加する",stats:"攻撃力、防御力、クリティカル",tags:["ドンキホーテ海賊団", "自然系能力者", "四上層幹部"]},
+      {name:"シュガーメダル",drop:"シュガー",trait:"敵をK.O.したとき、スキル2のクールタイムを4%短縮する",stats:"体力、攻撃力、防御力",tags:["ドンキホーテ海賊団", "超人系能力者"]},
+      {name:"ヴァイオレットメダル",drop:"ヴァイオレット",trait:"自分がお宝を奪取したとき、スキル1のクールタイムを5%短縮する",stats:"体力、攻撃力、防御力",tags:["ドンキホーテ海賊団", "超人系能力者"]},
+      {name:"バーソロミュー・くま（王下七武海）メダル",drop:"くま（王下七武海）",trait:"自チームのお宝エリアにいるとき、受けるダメージが5%減少する",stats:"体力、防御力、クリティカル",tags:["王下七武海", "超人系能力者"]},
+      {name:"ゲッコー・モリアメダル",drop:"モリア",trait:"自チームの味方がK.O.されたとき、スキル1のクールタイムを4%短縮する",stats:"攻撃力、防御力、クリティカル",tags:["スリラーバーク", "王下七武海", "超人系能力者"]},
+      {name:"ペローナメダル",drop:"ペローナ",trait:"残り時間が60秒以下のとき、スキル2のクールタイム短縮速度が13%増加する",stats:"体力、攻撃力、防御力",tags:["スリラーバーク", "超人系能力者"]},
+      {name:"アブサロムメダル",drop:"アブサロム",trait:"自分がお宝を奪取したとき、移動速度が20秒間3%増加する（重複不可）",stats:"攻撃力、防御力、クリティカル",tags:["スリラーバーク", "超人系能力者"]},
+      {name:"リューマメダル",drop:"リューマ",trait:"敵をK.O.したとき、クリティカルが20秒間60%増加する（重複不可）",stats:"攻撃力、防御力、クリティカル",tags:["スリラーバーク", "剣士", "ゾンビ"]},
+      {name:"オーズメダル",drop:"オーズ",trait:"体力が70%以上のとき、与えるダメージが5%増加する",stats:"攻撃力、防御力、クリティカル",tags:["スリラーバーク", "ゾンビ", "特殊"]},
+      {name:"バギー（四皇）メダル",drop:"バギー（四皇）",trait:"自分がいるお宝エリアに味方がいるとき、スキル1のクールタイム短縮速度が13%増加する",stats:"体力、攻撃力、防御力",tags:["新世界", "バギー海賊団", "超人系能力者", "四皇", "船長"]},
+      {name:"ミホーク（黒刀）メダル",drop:"ミホーク（黒刀）",trait:"敵をK.O.したとき、スキル1のクールタイムを10%短縮する",stats:"体力、防御力、クリティカル",tags:["新世界", "王下七武海", "剣士"]},
+      {name:"クロコダイル（新世界）メダル",drop:"クロコダイル（新世界）",trait:"体力が70%以上のとき、スキル1のクールタイム短縮速度が15%増加する",stats:"攻撃力、防御力、クリティカル",tags:["新世界", "王下七武海", "自然系能力者", "船長"]},
+      {name:"ジュラキュール・ミホークメダル",drop:"ミホーク",trait:"敵チームのお宝エリアにいるとき、与えるダメージが5%増加する",stats:"攻撃力、防御力、クリティカル",tags:["東の海", "王下七武海", "剣士"]},
+      {name:"火拳銃メダル",drop:"エース（火拳）",trait:"残り時間が60秒以下のとき、クリティカルが20秒間120%増加する（重複不可）",stats:"攻撃力、防御力、クリティカル",tags:["アラバスタ", "白ひげ海賊団", "自然系能力者"]},
+      {name:"戦斧メダル",drop:"白ひげ（戦斧）",trait:"敵をK.O.したとき、スキル2のクールタイムを8%短縮する",stats:"攻撃力、クリティカル、振動状態短縮",tags:["新世界", "白ひげ海賊団", "四皇"]},
+      {name:"大猿王銃メダル",drop:"ルフィ（大猿王銃）",trait:"敵チームのお宝エリアにいる敵に攻撃したとき、与えるダメージが5%増加する",stats:"体力、攻撃力、防御力",tags:["ワノ国", "麦わらの一味", "超人系能力者", "船長"]},
+      {name:"象銃乱打メダル",drop:"ルフィ（象銃乱打）",trait:"敵チームのお宝エリアにいるとき、与えるダメージが5%増加する",stats:"攻撃力、防御力、クリティカル",tags:["ドレスローザ", "麦わらの一味", "超人系能力者", "船長"]},
+      {name:"JETロケットメダル",drop:"ルフィ（JET）",trait:"残り時間が60秒以下のとき、移動速度が20秒間4%増加する（重複不可）",stats:"体力、攻撃力、防御力",tags:["エニエスロビー", "麦わらの一味", "超人系能力者", "船長"]},
+      {name:"ギア4メダル",drop:"ルフィ（ギア4）",trait:"体力が50%以下のとき、与えるダメージが5%増加する",stats:"攻撃力、防御力、クリティカル",tags:["ドレスローザ", "麦わらの一味", "超人系能力者", "船長"]},
+      {name:"ニカメダル",drop:"ルフィ（ニカ）",trait:"敵をK.O.したとき、スキル1のクールタイムを10%短縮する",stats:"攻撃力、防御力、クリティカル",tags:["ワノ国", "麦わらの一味", "超人系能力者", "船長", "解放の戦士"]},
+      {name:"カイドウ（人獣型）メダル",drop:"カイドウ（人獣型）",trait:"敵をK.O.したとき、スキル1のクールタイムを8%短縮する",stats:"攻撃力、防御力、クリティカル",tags:["ワノ国", "百獣海賊団", "四皇", "動物系能力者"]},
+      {name:"熱息メダル",drop:"カイドウ（熱息）",trait:"自チームのお宝エリアにいるとき、与えるダメージが5%増加する",stats:"攻撃力、防御力、クリティカル",tags:["ワノ国", "百獣海賊団", "四皇", "動物系能力者"]},
+      {name:"ルームメダル",drop:"ロー（ROOM）",trait:"敵をK.O.したとき、体力が5%回復する",stats:"体力、攻撃力、防御力",tags:["パンクハザード", "ハートの海賊団", "超人系能力者", "最悪の世代"]},
+      {name:"討ち入りローメダル",drop:"ロー（討ち入り）",trait:"敵エリアにいるとき、与えるダメージが5%増加する",stats:"攻撃力、防御力、クリティカル",tags:["ワノ国", "ハートの海賊団", "超人系能力者", "最悪の世代"]},
+      {name:"バリバリメダル",drop:"バルトロメオ",trait:"自チームの味方がK.O.されたとき、スキル2のクールタイムを6%短縮する",stats:"体力、防御力、クリティカル",tags:["ドレスローザ", "麦わら大船団", "超人系能力者", "船長"]},
+      {name:"バルトロメオメダル",drop:"バルトロメオ",trait:"お宝奪取中の敵に攻撃したとき、スキル2のクールタイムを2%短縮する",stats:"体力、攻撃力、防御力",tags:["ドレスローザ", "麦わら大船団", "超人系能力者", "船長"]},
+      {name:"キャベンディッシュメダル",drop:"キャベンディッシュ",trait:"体力が70%以上のとき、スキル1のクールタイム短縮速度が13%増加する",stats:"攻撃力、防御力、クリティカル",tags:["ドレスローザ", "麦わら大船団", "剣士", "船長"]},
+      {name:"レベッカメダル",drop:"レベッカ",trait:"自分がお宝を奪取したとき、スキル1のクールタイムを5%短縮する",stats:"体力、攻撃力、防御力",tags:["ドレスローザ", "剣士"]},
+      {name:"キュロスメダル",drop:"キュロス",trait:"敵をK.O.したとき、与えるダメージが5%増加する",stats:"攻撃力、防御力、クリティカル",tags:["ドレスローザ", "剣士"]},
+      {name:"トレーボル（特殊）メダル",drop:"トレーボル",trait:"自チームのお宝エリアにいるとき、受けるダメージが5%減少する",stats:"体力、防御力、クリティカル",tags:["ドレスローザ", "ドンキホーテ海賊団"]},
+    ];
+
+    // 効果キーワード（フィルター用）
+    const effectKeywords = [
+      "クリティカル",
+      "スキル1",
+      "スキル2",
+      "奪取速度",
+      "移動速度",
+      "回避",
+      "クールタイム",
+      "K.O."
+    ];
+
+    // ===== 初期化 =====
+    const allTags = [...new Set(medals.flatMap(m => m.tags))].sort();
+    let activeTags = new Set();
+    let activeEffects = new Set();
+
+    const tagFiltersEl = document.getElementById("tagFilters");
+    const effectFiltersEl = document.getElementById("effectFilters");
+    const medalListEl = document.getElementById("medalList");
+    const searchInput = document.getElementById("searchInput");
+    const resultCount = document.getElementById("resultCount");
+    const resetBtn = document.getElementById("resetBtn");
+
+    // タグボタン生成
+    allTags.forEach(tag => {
+      const btn = document.createElement("button");
+      btn.className = "tag-btn";
+      btn.textContent = tag;
+      btn.dataset.tag = tag;
+      btn.addEventListener("click", () => {
+        btn.classList.toggle("active");
+        if (activeTags.has(tag)) {
+          activeTags.delete(tag);
+        } else {
+          activeTags.add(tag);
+        }
+        render();
+      });
+      tagFiltersEl.appendChild(btn);
+    });
+
+    // 効果ボタン生成
+    effectKeywords.forEach(effect => {
+      const btn = document.createElement("button");
+      btn.className = "tag-btn";
+      btn.textContent = effect;
+      btn.dataset.effect = effect;
+      btn.addEventListener("click", () => {
+        btn.classList.toggle("active");
+        if (activeEffects.has(effect)) {
+          activeEffects.delete(effect);
+        } else {
+          activeEffects.add(effect);
+        }
+        render();
+      });
+      effectFiltersEl.appendChild(btn);
+    });
+
+    // 検索入力
+    searchInput.addEventListener("input", render);
+
+    // リセット
+    resetBtn.addEventListener("click", () => {
+      activeTags.clear();
+      activeEffects.clear();
+      searchInput.value = "";
+      document.querySelectorAll(".tag-btn").forEach(b => b.classList.remove("active"));
+      render();
+    });
+
+    // 描画
+    function render() {
+      const query = searchInput.value.trim().toLowerCase();
+      let visibleCount = 0;
+
+      medalListEl.innerHTML = "";
+
+      medals.forEach(medal => {
+        // タグフィルター（選択したタグをすべて含む）
+        const tagOk = activeTags.size === 0 || [...activeTags].every(t => medal.tags.includes(t));
+
+        // 効果フィルター（選択したキーワードのいずれかを含む）
+        const effectOk = activeEffects.size === 0 ||
+          [...activeEffects].some(e => medal.trait.includes(e) || medal.stats.includes(e));
+
+        // テキスト検索
+        const text = (medal.name + medal.drop + medal.trait + medal.stats + medal.tags.join("")).toLowerCase();
+        const searchOk = !query || text.includes(query);
+
+        if (tagOk && effectOk && searchOk) {
+          visibleCount++;
+          const card = document.createElement("div");
+          card.className = "medal-card";
+          card.innerHTML = `
+            <div>
+              <div class="medal-name">${medal.name}</div>
+              <div class="medal-tags">
+                ${medal.tags.map(t => `<span class="medal-tag">${t}</span>`).join("")}
+              </div>
+            </div>
+            <div class="medal-meta">
+              <div><strong>ドロップ：</strong>${medal.drop}</div>
+              <div><strong>固有特性：</strong>${medal.trait}</div>
+              <div><strong>強化ステータス：</strong>${medal.stats}</div>
+            </div>
+          `;
+          medalListEl.appendChild(card);
+        }
+      });
+
+      resultCount.textContent = `表示中: ${visibleCount} / ${medals.length} 件`;
+    }
+
+    // 初回描画
+    render();
+  </script>
+
+</body>
+</html>
